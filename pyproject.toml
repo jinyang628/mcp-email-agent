@@ -1,0 +1,40 @@
+[project]
+name = "mcp-email-agent"
+version = "0.1.1"
+description = "A CLI tool that helps you manage your emails."
+authors = [
+    {name = "jinyang628",email = "chenjinyang4192@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-api-python-client (>=2.169.0,<3.0.0)",
+    "google-auth-httplib2 (>=0.2.0,<0.3.0)",
+    "google-auth-oauthlib (>=1.2.2,<2.0.0)",
+    "click (>=8.2.0,<9.0.0)",
+    "appdirs (>=1.4.4,<2.0.0)",
+]
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+isort = "^6.0.0"
+autoflake = "^2.3.1"
+
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+line_length = 100
+wrap_length = 100
+multi_line_output = 3
+profile = "black"
+include_trailing_comma = true
+
+[tool.poetry.scripts]
+mea = "mcp_email_agent.main:cli"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
