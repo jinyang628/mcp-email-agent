@@ -28,12 +28,12 @@ def load_rules(rules_path=DEFAULT_RULES_PATH):
     ensure_dir_exists(rules_path)
     if not os.path.exists(rules_path):
         default_rules = {"categories": {}, "spam_deletion": {}, "auto_drafts": []}
-        with open(rules_path, "w") as f:
+        with open(rules_path, "w", encoding="utf-8") as f:
             json.dump(default_rules, f, indent=2)
         print(f"Created a default rules file at: {rules_path}")
         return default_rules
     try:
-        with open(rules_path, "r") as f:
+        with open(rules_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError:
         print(f"Error: Could not decode JSON from {rules_path}. Please check its format.")

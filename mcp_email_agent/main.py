@@ -2,6 +2,7 @@ import os
 import time
 
 import click
+from click import Context
 
 from .config import (
     DEFAULT_CREDENTIALS_PATH,
@@ -15,9 +16,9 @@ from .processor import process_email
 
 
 @click.group()
-@click.pass_context
-def cli(ctx):
+def cli():
     """MCP-EMAIL-AGENT: A tool to manage your emails."""
+    ctx: Context = click.get_current_context()
     ctx.ensure_object(dict)
     ctx.obj["CREDENTIALS_PATH"] = DEFAULT_CREDENTIALS_PATH
     ctx.obj["TOKEN_PATH"] = DEFAULT_TOKEN_PATH
@@ -70,7 +71,7 @@ def auth(ctx):
     help="Interval in seconds for continuous mode (if not run-once).",
 )
 @click.pass_context
-def run(ctx, max_emails, query, run_once, interval):
+def run(ctx, query, run_once, interval):
     """Fetch and process emails based on rules."""
     click.echo("Starting MCP email processing...")  # Or "MEA email processing..."
 
@@ -101,7 +102,7 @@ def run(ctx, max_emails, query, run_once, interval):
     def _process_cycle():
         nonlocal processed_message_ids_this_session
         click.echo(f"\n[{time.ctime()}] Checking for emails...")
-        messages_info = get_unread_emails(service, max_results=max_emails, query=query)
+        messages_info = get_unread_emails(service, query=query)
 
         if not messages_info:
             click.echo("No new emails matching query to process.")
@@ -155,4 +156,4 @@ def show_paths():
 
 
 if __name__ == "__main__":
-    cli(obj={})
+    cli()

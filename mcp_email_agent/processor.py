@@ -81,7 +81,7 @@ def process_email(service, email_details, rules_config):
             # Determine recipient: 'Reply-To' header if present, otherwise 'From'
             reply_to_header = email_details.get("reply-to")
             actual_reply_to_email = (
-                extract_email_address(reply_to_header) if reply_to_header else sender_email
+                _extract_email_address(reply_to_header) if reply_to_header else sender_email
             )
 
             print(

@@ -34,7 +34,7 @@ def get_gmail_service(credentials_path, token_path):
                 return None
             flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open(token_path, "w") as token_file:
+        with open(token_path, "w", encoding="utf-8") as token_file:
             token_file.write(creds.to_json())
     try:
         service = build("gmail", "v1", credentials=creds)
@@ -57,11 +57,9 @@ def get_gmail_service(credentials_path, token_path):
 # (Copy these from the previous example, making sure to handle HttpError)
 # For brevity, I'll omit them here but you need to include them.
 # Example for one:
-def get_unread_emails(service, max_results=10, query="is:unread"):
+def get_unread_emails(service, query="is:unread"):
     try:
-        results = (
-            service.users().messages().list(userId="me", q=query, maxResults=max_results).execute()
-        )
+        results = service.users().messages().list(userId="me", q=query).execute()
         messages = results.get("messages", [])
         return messages
     except HttpError as error:
