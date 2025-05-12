@@ -1,38 +1,31 @@
-# mcp_cli/main.py (or mea_app/main.py)
 import os
 import time
 
 import click
 
-from .config import ensure_dir_exists  # This is used to ensure parent directories exist
-from .config import (  # APP_NAME, # If you're using APP_NAME for labels, import it
+from .config import (
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_RULES_PATH,
     DEFAULT_TOKEN_PATH,
+    ensure_dir_exists,
     load_rules,
 )
-
-# Assuming your gmail.py is named gmail_client.py as in previous examples
 from .gmail import get_email_details, get_gmail_service, get_unread_emails
 from .processor import process_email
 
 
 @click.group()
 @click.pass_context
-def cli(ctx):  # Removed credentials_path, token_path, rules_path parameters
-    """MCP-CLI: A tool to manage your Gmail."""  # Or "MEA: My Email Assistant"
+def cli(ctx):
+    """MCP-EMAIL-AGENT: A tool to manage your emails."""
     ctx.ensure_object(dict)
-    # Always use the default paths
     ctx.obj["CREDENTIALS_PATH"] = DEFAULT_CREDENTIALS_PATH
     ctx.obj["TOKEN_PATH"] = DEFAULT_TOKEN_PATH
     ctx.obj["RULES_PATH"] = DEFAULT_RULES_PATH
 
-    # Ensure default directories exist.
-    # Your config.py might also do this on import, but it's good to be explicit here
-    # for the files themselves, as config.py might only ensure the top-level app dir.
-    ensure_dir_exists(ctx.obj["CREDENTIALS_PATH"])  # Ensures parent dir for credentials.json exists
-    ensure_dir_exists(ctx.obj["TOKEN_PATH"])  # Ensures parent dir for token.json exists
-    ensure_dir_exists(ctx.obj["RULES_PATH"])  # Ensures parent dir for rules.json exists
+    ensure_dir_exists(ctx.obj["CREDENTIALS_PATH"])
+    ensure_dir_exists(ctx.obj["TOKEN_PATH"])
+    ensure_dir_exists(ctx.obj["RULES_PATH"])
 
 
 @cli.command()
@@ -63,7 +56,6 @@ def auth(ctx):
 
 
 @cli.command()
-@click.option("--max-emails", default=20, show_default=True, help="Max emails to process per run.")
 @click.option(
     "--query",
     default="is:unread -label:mcp-processed",  # Or e.g., f"is:unread -label:{APP_NAME.lower()}-processed"
@@ -149,20 +141,17 @@ def run(ctx, max_emails, query, run_once, interval):
                 _process_cycle()
                 time.sleep(interval)
         except KeyboardInterrupt:
-            click.secho("\nMCP process stopped by user.", fg="yellow")  # Or "MEA..."
+            click.secho("\nMCP process stopped by user.", fg="yellow")
 
 
 @cli.command(name="show-paths")
-# @click.pass_context # Not needed if not accessing ctx
-def show_paths():  # Removed ctx parameter
-    """Show default paths for config files."""
-    click.echo("Default paths used by MCP-EMAIL-AGENT:")  # Or your new app name
+def show_paths():
+    """Show fixed paths for config files."""
+    click.echo("Config paths used by MCP-EMAIL-AGENT:")
     click.echo(f"  Credentials: {DEFAULT_CREDENTIALS_PATH}")
     click.echo(f"  Token:       {DEFAULT_TOKEN_PATH}")
     click.echo(f"  Rules:       {DEFAULT_RULES_PATH}")
-    click.echo(
-        "\nThese paths are fixed and determined by your operating system."
-    )  # Updated message
+    click.echo("\nThese paths are fixed and determined by your operating system.")
 
 
 if __name__ == "__main__":
