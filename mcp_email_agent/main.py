@@ -1,54 +1,38 @@
-# mcp_cli/main.py
+# mcp_cli/main.py (or mea_app/main.py)
 import os
 import time
 
 import click
 
-from .config import (
+from .config import ensure_dir_exists  # This is used to ensure parent directories exist
+from .config import (  # APP_NAME, # If you're using APP_NAME for labels, import it
     DEFAULT_CREDENTIALS_PATH,
     DEFAULT_RULES_PATH,
     DEFAULT_TOKEN_PATH,
-    ensure_dir_exists,
     load_rules,
 )
+
+# Assuming your gmail.py is named gmail_client.py as in previous examples
 from .gmail import get_email_details, get_gmail_service, get_unread_emails
 from .processor import process_email
 
 
 @click.group()
-@click.option(
-    "--credentials",
-    "credentials_path",
-    type=click.Path(),
-    default=DEFAULT_CREDENTIALS_PATH,
-    help=f"Path to Google API credentials.json. Default: {DEFAULT_CREDENTIALS_PATH}",
-)
-@click.option(
-    "--token",
-    "token_path",
-    type=click.Path(),
-    default=DEFAULT_TOKEN_PATH,
-    help=f"Path to store/read Google API token.json. Default: {DEFAULT_TOKEN_PATH}",
-)
-@click.option(
-    "--rules",
-    "rules_path",
-    type=click.Path(),
-    default=DEFAULT_RULES_PATH,
-    help=f"Path to rules.json. Default: {DEFAULT_RULES_PATH}",
-)
 @click.pass_context
-def cli(ctx, credentials_path, token_path, rules_path):
-    """MCP-CLI: A tool to manage your Gmail."""
+def cli(ctx):  # Removed credentials_path, token_path, rules_path parameters
+    """MCP-CLI: A tool to manage your Gmail."""  # Or "MEA: My Email Assistant"
     ctx.ensure_object(dict)
-    ctx.obj["CREDENTIALS_PATH"] = os.path.expanduser(credentials_path)
-    ctx.obj["TOKEN_PATH"] = os.path.expanduser(token_path)
-    ctx.obj["RULES_PATH"] = os.path.expanduser(rules_path)
+    # Always use the default paths
+    ctx.obj["CREDENTIALS_PATH"] = DEFAULT_CREDENTIALS_PATH
+    ctx.obj["TOKEN_PATH"] = DEFAULT_TOKEN_PATH
+    ctx.obj["RULES_PATH"] = DEFAULT_RULES_PATH
 
-    # Ensure directories exist when commands are run
-    ensure_dir_exists(ctx.obj["CREDENTIALS_PATH"])
-    ensure_dir_exists(ctx.obj["TOKEN_PATH"])
-    ensure_dir_exists(ctx.obj["RULES_PATH"])
+    # Ensure default directories exist.
+    # Your config.py might also do this on import, but it's good to be explicit here
+    # for the files themselves, as config.py might only ensure the top-level app dir.
+    ensure_dir_exists(ctx.obj["CREDENTIALS_PATH"])  # Ensures parent dir for credentials.json exists
+    ensure_dir_exists(ctx.obj["TOKEN_PATH"])  # Ensures parent dir for token.json exists
+    ensure_dir_exists(ctx.obj["RULES_PATH"])  # Ensures parent dir for rules.json exists
 
 
 @cli.command()
@@ -56,14 +40,16 @@ def cli(ctx, credentials_path, token_path, rules_path):
 def auth(ctx):
     """Authorize the application with Google Gmail."""
     click.echo("Attempting to authorize with Google Mail...")
+    # CREDENTIALS_PATH is now always the default from ctx.obj
     if not os.path.exists(ctx.obj["CREDENTIALS_PATH"]):
         click.secho(f"Credentials file not found: {ctx.obj['CREDENTIALS_PATH']}", fg="red")
         click.echo(
-            "Please download your 'credentials.json' from Google Cloud Console and place it there,"
+            "Please download your 'credentials.json' from Google Cloud Console and place it there."
         )
-        click.echo("or use the --credentials option to specify its path.")
+        # Removed the part about specifying with --credentials
         return
 
+    # TOKEN_PATH is now always the default from ctx.obj
     service = get_gmail_service(ctx.obj["CREDENTIALS_PATH"], ctx.obj["TOKEN_PATH"])
     if service:
         click.secho("Successfully authorized and token saved!", fg="green")
@@ -80,7 +66,7 @@ def auth(ctx):
 @click.option("--max-emails", default=20, show_default=True, help="Max emails to process per run.")
 @click.option(
     "--query",
-    default="is:unread -label:mcp-processed",
+    default="is:unread -label:mcp-processed",  # Or e.g., f"is:unread -label:{APP_NAME.lower()}-processed"
     show_default=True,
     help="Gmail query to fetch emails.",
 )
@@ -94,26 +80,29 @@ def auth(ctx):
 @click.pass_context
 def run(ctx, max_emails, query, run_once, interval):
     """Fetch and process emails based on rules."""
-    click.echo("Starting MCP email processing...")
+    click.echo("Starting MCP email processing...")  # Or "MEA email processing..."
 
+    # RULES_PATH is now always the default from ctx.obj
     rules_config = load_rules(ctx.obj["RULES_PATH"])
     if rules_config is None:
         click.secho("Could not load rules. Exiting.", fg="red")
         return
 
+    # TOKEN_PATH is now always the default from ctx.obj
     if not os.path.exists(ctx.obj["TOKEN_PATH"]):
         click.secho(
-            f"Token file not found at {ctx.obj['TOKEN_PATH']}. Please run 'mcp-cli auth' first.",
+            f"Token file not found at {ctx.obj['TOKEN_PATH']}. Please run 'mcp-cli auth' first.",  # Or 'mea auth'
             fg="red",
         )
         return
 
+    # CREDENTIALS_PATH is now always the default from ctx.obj
     service = get_gmail_service(ctx.obj["CREDENTIALS_PATH"], ctx.obj["TOKEN_PATH"])
     if not service:
         click.secho("Failed to connect to Gmail. Exiting.", fg="red")
         return
 
-    click.secho(f"MCP Processing Engine Started. Query: '{query}'", fg="cyan")
+    click.secho(f"MCP Processing Engine Started. Query: '{query}'", fg="cyan")  # Or "MEA..."
 
     processed_message_ids_this_session = set()
 
@@ -138,7 +127,7 @@ def run(ctx, max_emails, query, run_once, interval):
                     if action_taken:
                         # Optional: Add a "mcp-processed" label if your query uses it
                         # from .gmail_client import modify_message_labels, get_label_ids_by_name
-                        # processed_label_id = get_label_ids_by_name(service, ["mcp-processed"])
+                        # processed_label_id = get_label_ids_by_name(service, ["mcp-processed"]) # Or [f"{APP_NAME.lower()}-processed"]
                         # if processed_label_id:
                         #    modify_message_labels(service, msg_id, processed_label_id, [])
                         pass  # Action already logged in process_email
@@ -146,7 +135,6 @@ def run(ctx, max_emails, query, run_once, interval):
                 else:
                     click.secho(f"Could not fetch details for message {msg_id}", fg="yellow")
 
-        # Clear for next immediate cycle if in loop, or for next cron run
         processed_message_ids_this_session.clear()
 
     if run_once:
@@ -161,18 +149,20 @@ def run(ctx, max_emails, query, run_once, interval):
                 _process_cycle()
                 time.sleep(interval)
         except KeyboardInterrupt:
-            click.secho("\nMCP process stopped by user.", fg="yellow")
+            click.secho("\nMCP process stopped by user.", fg="yellow")  # Or "MEA..."
 
 
 @cli.command(name="show-paths")
-@click.pass_context
-def show_paths(ctx):
+# @click.pass_context # Not needed if not accessing ctx
+def show_paths():  # Removed ctx parameter
     """Show default paths for config files."""
-    click.echo("Default paths used by MCP-CLI:")
+    click.echo("Default paths used by MCP-EMAIL-AGENT:")  # Or your new app name
     click.echo(f"  Credentials: {DEFAULT_CREDENTIALS_PATH}")
     click.echo(f"  Token:       {DEFAULT_TOKEN_PATH}")
     click.echo(f"  Rules:       {DEFAULT_RULES_PATH}")
-    click.echo("\nYou can override these using --credentials, --token, and --rules options.")
+    click.echo(
+        "\nThese paths are fixed and determined by your operating system."
+    )  # Updated message
 
 
 if __name__ == "__main__":
